@@ -5,7 +5,7 @@ using System.Windows.Forms;
 using Tesseract;
 using PdfiumViewer;
 using System.Drawing;
-using System.Threading.Tasks;  // Add this for async/await
+using System.Threading.Tasks;  
 
 namespace OCR1WindowsForm
 {
@@ -14,21 +14,18 @@ namespace OCR1WindowsForm
         public Form1()
         {
             InitializeComponent();
-            // Initialize the status to "Ready" when the form loads
+
             lblStatus.Text = "Status: Ready";
         }
 
-        // Folder Browser Button Click Event
         private void btnBrowse_Click(object sender, EventArgs e)
         {
             using (FolderBrowserDialog folderBrowser = new FolderBrowserDialog())
             {
                 if (folderBrowser.ShowDialog() == DialogResult.OK)
                 {
-                    // Set selected folder path to the textbox
                     txtFolderPath.Text = folderBrowser.SelectedPath;
 
-                    // Check if folder path exists
                     if (Directory.Exists(txtFolderPath.Text))
                     {
                         lblStatus.Text = "Status: Ready";
@@ -122,7 +119,7 @@ namespace OCR1WindowsForm
             string ocrResult = "";
 
             // Initialize Tesseract engine
-            using (var ocrEngine = new TesseractEngine(@"C:\Users\ichha\source\repos\OCR1\Tessdata", "eng", EngineMode.Default))
+            using (var ocrEngine = new TesseractEngine(@"C:\Users\ichha\source\repos\OCR1WindowsForm\Tessdata", "eng", EngineMode.Default))
             {
                 // Convert image to Pix format for Tesseract
                 using (var pixImage = PixConverter.ToPix((Bitmap)image))
@@ -160,6 +157,11 @@ namespace OCR1WindowsForm
             }
 
             return filePath;
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.lblfolderpath = new System.Windows.Forms.Label();
             this.txtFolderPath = new System.Windows.Forms.TextBox();
             this.btnBrowse = new System.Windows.Forms.Button();
@@ -84,14 +85,16 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(422, 153);
+            this.ClientSize = new System.Drawing.Size(403, 135);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.btnBrowse);
             this.Controls.Add(this.txtFolderPath);
             this.Controls.Add(this.lblfolderpath);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "PDF Auto Umbenenner";
+            this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
