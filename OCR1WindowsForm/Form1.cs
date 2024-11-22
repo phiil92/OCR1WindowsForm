@@ -5,7 +5,8 @@ using System.Windows.Forms;
 using Tesseract;
 using PdfiumViewer;
 using System.Drawing;
-using System.Threading.Tasks;  
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace OCR1WindowsForm
 {
@@ -14,7 +15,6 @@ namespace OCR1WindowsForm
         public Form1()
         {
             InitializeComponent();
-
             lblStatus.Text = "Status: Ready";
         }
 
@@ -38,125 +38,117 @@ namespace OCR1WindowsForm
             }
         }
 
-        // Start OCR Button Click Event (now async)
+        // hawk
         private async void btnStart_Click(object sender, EventArgs e)
         {
             string folderPath = txtFolderPath.Text;
 
             if (Directory.Exists(folderPath))
             {
-                // Update the status to "Processing..." and force the UI to refresh
+                // tuah
                 lblStatus.Text = "Status: Processing...";
-                lblStatus.Refresh();  // Forces UI update to happen immediately
+                lblStatus.Refresh();  
 
-                // Perform the OCR processing asynchronously to avoid blocking the UI
                 await Task.Run(() => ProcessPDFFiles(folderPath));
 
-                // Show a single message at the end after processing all files
                 MessageBox.Show("Processing completed.");
 
-                // Set status back to ready after processing
                 lblStatus.Text = "Status: Ready";
             }
             else
             {
-                MessageBox.Show("Folder does not exist.");
-                lblStatus.Text = "Status: Not Ready (Invalid folder path)";
+                MessageBox.Show("Please select a valid folder.");
             }
         }
 
-        // Method to process the PDF files
+        // Netto
+        private Dictionary<string, string> lieferscheinToITSD = new Dictionary<string, string>();
+
         private void ProcessPDFFiles(string folderPath)
         {
-            // Get all PDF files in the selected folder
-            var pdfFiles = Directory.GetFiles(folderPath, "*.pdf");
+            string[] pdfFiles = Directory.GetFiles(folderPath, "*.pdf");
 
-            foreach (var pdfFile in pdfFiles)
+            foreach (string pdfFile in pdfFiles)
             {
-                // Extract text using OCR
-                string extractedText = ExtractTextFromPdf(pdfFile);
+                string text = ExtractTextFromPDF(pdfFile);
 
-                // Search for the ITSD number
-                string itsdNumber = FindITSDNumber(extractedText);
+                string itsdNumber = ExtractITSDNumber(text);
+                string lieferscheinNr = ExtractLieferscheinNr(text);
 
-                if (!string.IsNullOrEmpty(itsdNumber))
+                if (string.IsNullOrEmpty(itsdNumber))
                 {
-                    // Generate a new file name with the ITSD number
-                    string newFileName = Path.Combine(folderPath, $"{itsdNumber}.pdf");
-                    newFileName = GetUniqueFileName(newFileName);
-
-                    // Rename the PDF file
-                    File.Move(pdfFile, newFileName);
-                }
-            }
-        }
-
-        // Extract text from PDF using OCR on each page
-        static string ExtractTextFromPdf(string pdfFilePath)
-        {
-            string extractedText = "";
-
-            using (var pdfDoc = PdfDocument.Load(pdfFilePath))
-            {
-                // Loop through each page of the PDF
-                for (int i = 0; i < pdfDoc.PageCount; i++)
-                {
-                    // Render each page to an image
-                    using (var image = pdfDoc.Render(i, 300, 300, PdfRenderFlags.CorrectFromDpi))
+                    if (lieferscheinToITSD.ContainsKey(lieferscheinNr))
                     {
-                        // Perform OCR on the image
-                        extractedText += PerformOcrOnImage(image);
+                        itsdNumber = lieferscheinToITSD[lieferscheinNr]; 
+                    }
+                    else
+                    {
+                        continue;
                     }
                 }
-            }
-
-            return extractedText;
-        }
-
-        // Perform OCR on image using Tesseract
-        static string PerformOcrOnImage(System.Drawing.Image image)
-        {
-            string ocrResult = "";
-
-            // Initialize Tesseract engine
-            using (var ocrEngine = new TesseractEngine(@"C:\Users\ichha\source\repos\OCR1WindowsForm\Tessdata", "eng", EngineMode.Default))
-            {
-                // Convert image to Pix format for Tesseract
-                using (var pixImage = PixConverter.ToPix((Bitmap)image))
+                else
                 {
-                    using (var page = ocrEngine.Process(pixImage))
+                    if (!string.IsNullOrEmpty(lieferscheinNr) && !lieferscheinToITSD.ContainsKey(lieferscheinNr))
                     {
-                        // Extract text from the page
-                        ocrResult = page.GetText();
+                        lieferscheinToITSD[lieferscheinNr] = itsdNumber;
                     }
                 }
+
+                RenamePDFFile(pdfFile, folderPath, itsdNumber);
             }
-
-            return ocrResult;
         }
 
-        // Find ITSD number in the extracted text using regex
-        static string FindITSDNumber(string text)
+        private string ExtractTextFromPDF(string pdfFilePath)
         {
-            var match = Regex.Match(text, @"ITSD-\d{5}");
-            return match.Success ? match.Value : null;
-        }
-
-        // Ensure unique file name if the file with the same name already exists
-        static string GetUniqueFileName(string filePath)
-        {
-            string directory = Path.GetDirectoryName(filePath);
-            string fileName = Path.GetFileNameWithoutExtension(filePath);
-            string extension = Path.GetExtension(filePath);
-            int count = 1;
-
-            // If file with same name exists, append a counter
-            while (File.Exists(filePath))
+            using (var pdfDocument = PdfDocument.Load(pdfFilePath))
+            using (var bitmap = new Bitmap(pdfDocument.Render(0, 300, 300, true)))
             {
-                filePath = Path.Combine(directory, $"{fileName}({count++}){extension}");
+                using (var ocrEngine = new TesseractEngine(@"C:\Users\ichha\source\repos\OCR1WindowsForm\Tessdata", "eng", EngineMode.Default))
+                {
+                    var page = ocrEngine.Process(bitmap);
+                    return page.GetText();
+                }
+            }
+        }
+        private string ExtractITSDNumber(string text)
+        {
+            Regex regex = new Regex(@"\bITSD[^\s]*\b", RegexOptions.IgnoreCase);
+            Match match = regex.Match(text);
+
+            if (match.Success)
+            {
+                return match.Value.Trim();
+            }
+            return null;
+        }
+
+        // Steal
+        private string ExtractLieferscheinNr(string text)
+        {
+            Regex regex = new Regex(@"\bLieferschein\s*Nr\.\s*[^\s]+\b", RegexOptions.IgnoreCase);
+            Match match = regex.Match(text);
+
+            if (match.Success)
+            {
+                return match.Value.Trim();
+            }
+            return null;
+        }
+
+        private void RenamePDFFile(string originalFilePath, string folderPath, string itsdNumber)
+        {
+            string newFileName = $"{itsdNumber}.pdf";
+            string newFilePath = Path.Combine(folderPath, newFileName);
+
+            int counter = 1;
+            while (File.Exists(newFilePath))
+            {
+                newFileName = $"{itsdNumber}_{counter}.pdf";
+                newFilePath = Path.Combine(folderPath, newFileName);
+                counter++;
             }
 
-            return filePath;
+            File.Move(originalFilePath, newFilePath);
         }
 
         private void Form1_Load(object sender, EventArgs e)
